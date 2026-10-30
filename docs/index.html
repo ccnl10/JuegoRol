@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JuegoRol · Juego de rol por turnos en Kotlin</title>
+<meta name="description" content="Juego de rol por turnos en consola escrito en Kotlin: héroes contra enemigos, clases abstractas, interfaces y mucho más.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f6f3ec; --panel:#fffdf8; --ink:#1d1a16; --muted:#6a6358; --line:#e3dccd;
+  --gold:#a8751c; --accent:#7F52FF; --red:#c2412d; --green:#2f8f4e; --blue:#2c62c4;
+  --hero-from:#1b1530; --hero-to:#3a2557; --hero-ink:#f4efe4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#121016; --panel:#1b1820; --ink:#ece6da; --muted:#a59d8f; --line:#2f2a35;
+    --gold:#e0b25a; --accent:#a98bff; --red:#ff7a66; --green:#5fd18a; --blue:#7fb0ff;
+    --hero-from:#0d0a14; --hero-to:#2a1b40;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#121016; --panel:#1b1820; --ink:#ece6da; --muted:#a59d8f; --line:#2f2a35;
+  --gold:#e0b25a; --accent:#a98bff; --red:#ff7a66; --green:#5fd18a; --blue:#7fb0ff;
+  --hero-from:#0d0a14; --hero-to:#2a1b40;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 Inter, system-ui, sans-serif; }
+a { color:inherit; }
+code { font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.88em; }
+.wrap { max-width:1080px; margin:0 auto; padding:0 16px; }
+
+/* Portada */
+.hero { background:linear-gradient(160deg, var(--hero-from), var(--hero-to)); color:var(--hero-ink); padding:28px 0 64px; overflow:hidden; }
+.top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:48px; }
+.marca { font:800 18px Cinzel, serif; letter-spacing:.06em; text-decoration:none; }
+.top nav { display:flex; gap:18px; align-items:center; font-size:14px; flex-wrap:wrap; justify-content:flex-end; }
+.top nav a { text-decoration:none; opacity:.85; } .top nav a:hover { opacity:1; }
+#tema { background:transparent; border:1px solid rgba(255,255,255,.3); color:inherit; border-radius:999px; padding:4px 11px; font:inherit; font-size:13px; cursor:pointer; }
+.hero-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:40px; align-items:center; }
+.kicker { font:600 12px Inter, sans-serif; letter-spacing:.16em; text-transform:uppercase; color:#e0b25a; margin:0 0 12px; }
+h1 { font:800 clamp(40px,7vw,68px)/1.02 Cinzel, serif; margin:0; letter-spacing:.01em; }
+.lead { font-size:19px; margin:18px 0 28px; color:rgba(244,239,228,.86); max-width:34ch; }
+.botones { display:flex; gap:12px; flex-wrap:wrap; }
+.btn { display:inline-flex; align-items:center; gap:8px; text-decoration:none; font-weight:600; font-size:15px; padding:11px 18px; border-radius:10px; }
+.btn.primario { background:#e0b25a; color:#1b1530; }
+.btn.primario:hover { background:#efc773; }
+.btn.secundario { border:1px solid rgba(255,255,255,.35); }
+.btn.secundario:hover { background:rgba(255,255,255,.08); }
+.captura { width:100%; height:auto; filter:drop-shadow(0 24px 40px rgba(0,0,0,.45)); }
+
+/* Secciones */
+section { padding:64px 0 8px; }
+h2 { font:800 clamp(26px,4vw,34px)/1.15 Cinzel, serif; margin:0 0 8px; }
+.sub { color:var(--muted); margin:0 0 28px; max-width:62ch; }
+
+.personajes { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+.pj { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; position:relative; }
+.pj .bando { position:absolute; top:16px; right:16px; font:600 11px Inter, sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+.pj.heroe .bando { color:var(--blue); } .pj.enemigo .bando { color:var(--red); }
+.pj .icono { font-size:30px; line-height:1; }
+.pj h3 { font:800 20px Cinzel, serif; margin:10px 0 0; }
+.pj .clase { color:var(--muted); font-size:14px; margin:0 0 12px; }
+.barra { height:8px; border-radius:99px; background:var(--line); overflow:hidden; margin:4px 0 10px; }
+.barra span { display:block; height:100%; background:linear-gradient(90deg, var(--green), #8fd16a); }
+.datos { display:flex; gap:14px; font-size:14px; color:var(--muted); margin-bottom:8px; }
+.datos b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.pj p { margin:0; font-size:15px; }
+
+.pasos { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; counter-reset:paso; }
+.paso { border-top:3px solid var(--gold); padding:16px 4px 0; }
+.paso::before { counter-increment:paso; content:"Paso " counter(paso); font:600 12px Inter, sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); }
+.paso h3 { font-size:18px; margin:6px 0 4px; }
+.paso p { margin:0; color:var(--muted); font-size:15px; }
+.nota { margin-top:22px; background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:10px; padding:14px 16px; font-size:15px; }
+
+.docs { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+.doc { display:block; text-decoration:none; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; transition:border-color .15s, transform .15s; }
+.doc:hover { border-color:var(--accent); transform:translateY(-2px); }
+.doc .icono { font-size:26px; }
+.doc h3 { margin:8px 0 4px; font-size:18px; }
+.doc p { margin:0 0 10px; color:var(--muted); font-size:15px; }
+.doc .ir { color:var(--accent); font-weight:600; font-size:14px; }
+
+.instalar { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+.instalar ol { margin:0; padding-left:22px; } .instalar li { margin:6px 0; }
+pre { background:#1e1f26; color:#d7d9df; padding:14px 16px; border-radius:10px; overflow-x:auto; margin:0; font-size:14px; }
+
+footer { margin-top:72px; border-top:1px solid var(--line); padding:24px 0 40px; color:var(--muted); font-size:14px; }
+footer .wrap { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+@media (max-width:860px) {
+  .hero-grid, .instalar { grid-template-columns:1fr; }
+  .personajes, .pasos, .docs { grid-template-columns:1fr 1fr; }
+  .top nav .opc { display:none; }
+}
+@media (max-width:560px) {
+  .personajes, .pasos, .docs { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="top">
+      <a class="marca" href="#">⚔️ JuegoRol</a>
+      <nav aria-label="Secciones">
+        <a class="opc" href="#personajes">Personajes</a>
+        <a class="opc" href="#como-se-juega">Cómo se juega</a>
+        <a class="opc" href="#documentacion">Documentación</a>
+        <a href="https://github.com/ccnl10/JuegoRol">GitHub ↗</a>
+        <button id="tema" type="button" aria-label="Cambiar entre tema claro y oscuro">◐</button>
+      </nav>
+    </div>
+    <div class="hero-grid">
+      <div>
+        <p class="kicker">Kotlin · Programación orientada a objetos</p>
+        <h1>Juego de rol por turnos</h1>
+        <p class="lead">Tres héroes contra tres enemigos, en la consola. Espadas, bolas de fuego, flechas, curaciones… y un dragón.</p>
+        <div class="botones">
+          <a class="btn primario" href="https://github.com/ccnl10/JuegoRol/archive/refs/heads/master.zip">⬇ Descargar el proyecto</a>
+          <a class="btn secundario" href="api/">🔎 Ver la API</a>
+        </div>
+      </div>
+      <img class="captura" src="img/consola.png" alt="Captura del juego: el menú, la primera ronda del combate y el estado de los dos equipos" width="600" height="702">
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="personajes">
+    <div class="wrap">
+      <h2>Los personajes</h2>
+      <p class="sub">Cada personaje tiene su vida, su arma y una regla propia. Curar y volar son habilidades que comparten héroes y enemigos.</p>
+      <div class="personajes">
+        <article class="pj heroe"><span class="bando">Héroe</span><div class="icono">🛡️</div><h3>Brunilda</h3><p class="clase">Guerrero · espada</p>
+          <div class="barra"><span style="width:60%"></span></div><div class="datos"><span>Vida <b>120</b></span><span>Daño <b>20</b></span></div>
+          <p>Su armadura le quita daño a cada golpe, pero contra quien vuela solo hace la mitad.</p></article>
+        <article class="pj heroe"><span class="bando">Héroe</span><div class="icono">🔮</div><h3>Merlín</h3><p class="clase">Mago · bastón</p>
+          <div class="barra"><span style="width:40%"></span></div><div class="datos"><span>Vida <b>80</b></span><span>Daño <b>20</b> / 10</span></div>
+          <p>Lanza bolas de fuego mientras le queda maná. Cura a su equipo y vuela.</p></article>
+        <article class="pj heroe"><span class="bando">Héroe</span><div class="icono">🏹</div><h3>Ariadna</h3><p class="clase">Arquero · arco</p>
+          <div class="barra"><span style="width:45%"></span></div><div class="datos"><span>Vida <b>90</b></span><span>Daño <b>15</b></span></div>
+          <p>Gasta una flecha por ataque. Sin flechas, solo le queda el puño.</p></article>
+        <article class="pj enemigo"><span class="bando">Enemigo</span><div class="icono">👺</div><h3>Snik</h3><p class="clase">Goblin · daga</p>
+          <div class="barra"><span style="width:25%"></span></div><div class="datos"><span>Vida <b>50</b></span><span>Daño <b>8</b></span></div>
+          <p>El más débil del grupo. Da 30 de oro al caer.</p></article>
+        <article class="pj enemigo"><span class="bando">Enemigo</span><div class="icono">🧌</div><h3>Grog</h3><p class="clase">Trol · maza</p>
+          <div class="barra"><span style="width:75%"></span></div><div class="datos"><span>Vida <b>150</b></span><span>Daño <b>20</b></span></div>
+          <p>Resistente y capaz de curarse a sí mismo. Da 150 de oro.</p></article>
+        <article class="pj enemigo"><span class="bando">Enemigo</span><div class="icono">🐉</div><h3>Ignis</h3><p class="clase">Dragón · garras</p>
+          <div class="barra"><span style="width:100%"></span></div><div class="datos"><span>Vida <b>200</b></span><span>Daño <b>30</b></span></div>
+          <p>Vuela y golpea más fuerte que nadie. Da 500 de oro.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="como-se-juega">
+    <div class="wrap">
+      <h2>Cómo se juega una ronda</h2>
+      <p class="sub">Tú decides cuándo avanzar: ronda a ronda o hasta el final. Entre ronda y ronda puedes consultar la batalla y dar pociones.</p>
+      <div class="pasos">
+        <div class="paso"><h3>Atacan los héroes</h3><p>Cada héroe vivo ataca al primer enemigo que sigue en pie.</p></div>
+        <div class="paso"><h3>Responden los enemigos</h3><p>Cada enemigo vivo ataca al héroe que tiene más vida.</p></div>
+        <div class="paso"><h3>Curan los sanadores</h3><p>Merlín y Grog curan al compañero herido con menos vida.</p></div>
+      </div>
+      <p class="nota">Con la partida inicial, los héroes ganan en <b>12 rondas</b> y consiguen <b>680 de oro</b>. ¿Lo mejoras usando bien las pociones?</p>
+    </div>
+  </section>
+
+  <section id="instalar">
+    <div class="wrap instalar">
+      <div>
+        <h2>Ponlo en marcha</h2>
+        <p class="sub" style="margin-bottom:14px">Necesitas IntelliJ IDEA y un JDK 17 o superior.</p>
+        <ol>
+          <li>Descarga el proyecto o clónalo.</li>
+          <li>En IntelliJ: <b>File → Open</b> y elige la carpeta <code>JuegoRol</code>. Espera a que Gradle termine.</li>
+          <li>Abre <code>src/main/kotlin/rol/Main.kt</code> y pulsa ▶ junto a <code>fun main()</code>.</li>
+        </ol>
+      </div>
+      <pre><code>git clone https://github.com/ccnl10/JuegoRol.git</code></pre>
+    </div>
+  </section>
+
+  <section id="documentacion">
+    <div class="wrap">
+      <h2>Documentación</h2>
+      <p class="sub">Todo el código está documentado con KDoc.</p>
+      <div class="docs">
+        <a class="doc" href="Manual_Usuario_JuegoRol.pdf"><div class="icono">📘</div><h3>Manual de usuario</h3><p>Cómo se instala y se juega, con un ejemplo de cada opción del menú.</p><span class="ir">Abrir PDF →</span></a>
+        <a class="doc" href="Manual_Tecnico_JuegoRol.pdf"><div class="icono">🛠️</div><h3>Manual técnico</h3><p>Diseño de clases, reglas del combate, Gradle y cómo ampliar el juego.</p><span class="ir">Abrir PDF →</span></a>
+        <a class="doc" href="api/"><div class="icono">🔎</div><h3>API</h3><p>Cada clase, propiedad y función, con buscador y enlaces.</p><span class="ir">Ver la API →</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Desarrollo de Interfaces · 2º DAM · IES Virrey Morcillo</span>
+    <a href="https://github.com/ccnl10/JuegoRol">Código en GitHub</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  const raiz = document.documentElement;
+  try { const t = localStorage.getItem('tema-juegorol'); if (t) raiz.dataset.theme = t; } catch (e) {}
+  document.getElementById('tema').addEventListener('click', () => {
+    const oscuro = raiz.dataset.theme ? raiz.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    raiz.dataset.theme = oscuro ? 'light' : 'dark';
+    try { localStorage.setItem('tema-juegorol', raiz.dataset.theme); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
